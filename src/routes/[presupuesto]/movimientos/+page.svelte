@@ -1,18 +1,11 @@
 <script lang="ts">
-    import { cotizacionDolarHistorca } from "$lib";
+    import { cotizacionDolarHistorca, fmtMonto } from "$lib";
     import { putMovimiento, type Movimiento } from "$lib/localDb";
     // import { getMovimientos, getPresupuestos } from "$lib/localDb";
     // import { liveQuery } from "dexie";
     import type { PageProps } from "./$types";
 
     const { data }: PageProps = $props()
-
-    function fmtMonto(monto: number, moneda: Movimiento['moneda']) {
-        return (monto > 0 ? '+' : '') + monto.toLocaleString("es-AR", {
-            style: "currency",
-            currency: moneda === "ars" ? "ARS" : "USD",
-        })
-    }
 
     async function calcularConversion(mvtViejo: Movimiento) {
         const mvt = { ...mvtViejo }

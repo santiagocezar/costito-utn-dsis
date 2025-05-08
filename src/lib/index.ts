@@ -1,4 +1,5 @@
 import * as v from "valibot"
+import type { Movimiento } from "./localDb"
 
 interface Cotizacion {
     compra: number
@@ -48,4 +49,11 @@ export async function cotizacionDolarHistorca(fecha: Date, variante: "oficial"  
     const json = await res.json()
 
     return v.parse(Cotizacion, json)
+}
+
+export function fmtMonto(monto: number, moneda: Movimiento['moneda']) {
+    return (monto > 0 ? '+' : '') + monto.toLocaleString("es-AR", {
+        style: "currency",
+        currency: moneda === "ars" ? "ARS" : "USD",
+    })
 }
