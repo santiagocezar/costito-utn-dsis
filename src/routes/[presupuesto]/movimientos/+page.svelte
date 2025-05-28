@@ -1,6 +1,8 @@
 <script lang="ts">
-    import { cotizacionDolarHistorca, fmtMonto } from "$lib";
-    import { putMovimiento, type Movimiento } from "$lib/localDb";
+    import { cotizacionDolarHistorca, fmtMontoSigno } from "$lib";
+    import { putMovimiento } from "$lib/localDb";
+    import { Movimiento } from "$lib/schema";
+    import { liveQuery } from "dexie";
     // import { getMovimientos, getPresupuestos } from "$lib/localDb";
     // import { liveQuery } from "dexie";
     import type { PageProps } from "./$types";
@@ -9,7 +11,7 @@
 
     async function calcularConversion(mvtViejo: Movimiento) {
         const mvt = { ...mvtViejo }
-        const conversion = await cotizacionDolarHistorca(mvt.fecha, "oficial")
+        const conversion = await cotizacionDolarHistorca(new Date(mvt.fecha), "oficial")
 
         if (mvt.monto < 0) {
             // Si el usuario gasta dolares, se estima que va a comprar más dolares
@@ -32,18 +34,18 @@
     {#each data.movimientos as mvt}
         <a href={mvt.id.toString()} class="flex justify-between p-2 rounded-xl bg-gray-100">
             <div class="grow">
-                {fmtMonto(mvt.monto, mvt.moneda)}
+                {fmtMontoSigno(mvt.monto, mvt.moneda)}
                 {#if mvt.montoConvertido != undefined}
-                    ({fmtMonto(mvt.montoConvertido, "ars")})
+                    ({fmtMontoSigno(mvt.montoConvertido, "ars")})
                 {:else if mvt.moneda !== "ars"}
                     {#await calcularConversion(mvt)}
                         (...)
                     {:then monto} 
-                        ({fmtMonto(monto, "ars")})
+                        ({fmtMontoSigno(monto, "ars")})
                     {/await}
                 {/if}
             </div>
-            {mvt.fecha.toLocaleDateString("es-AR", {
+            {new Date(mvt.fecha).toLocaleDateString("es-AR", {
                 year: "numeric",
                 month: "2-digit",
                 day: "2-digit",

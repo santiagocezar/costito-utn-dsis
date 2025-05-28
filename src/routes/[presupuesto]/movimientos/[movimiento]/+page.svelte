@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { fmtMonto } from '$lib';
+    import { fmtMontoSigno } from '$lib';
     import { maps, marker, places } from '$lib/google-maps-init';
     import { getTercero } from '$lib/localDb';
     import type { PageProps } from './$types';
@@ -10,7 +10,7 @@
 
     function asMap(node: HTMLElement) {
         const map = new maps.Map(node, {
-            center: { lat: mvt.latitud, lng: mvt.longitud },
+            center: mvt.ubicacion,
             disableDefaultUI: true,
             zoom: 16,
             styles: [
@@ -30,20 +30,20 @@
                 if (tercero) {
                     const point = new marker.Marker({
                         map,
-                        position: { lat: tercero.latitud!, lng: tercero.longitud! },
+                        position: tercero.ubicacion,
                         label: tercero.nombre
                     })
                 } else {
                     const point = new marker.Marker({
                         map,
-                        position: { lat: mvt.latitud, lng: mvt.longitud },
+                        position: mvt.ubicacion,
                     })
                 }
             })
         } else {
             const point = new marker.Marker({
                 map,
-                position: { lat: mvt.latitud, lng: mvt.longitud },
+                position: mvt.ubicacion,
             })
         }
                         
@@ -55,10 +55,10 @@
     <div use:asMap class="w-full h-72"></div>
     <ul>
         <li><strong>ID:</strong> {mvt.id}</li>
-        <li><strong>Fecha:</strong> {mvt.fecha.toLocaleDateString()}</li>
-        <li><strong>Monto:</strong> {fmtMonto(mvt.monto, mvt.moneda)}</li>
+        <li><strong>Fecha:</strong> {new Date(mvt.fecha).toLocaleDateString()}</li>
+        <li><strong>Monto:</strong> {fmtMontoSigno(mvt.monto, mvt.moneda)}</li>
         {#if mvt.montoConvertido != undefined}
-            <li><strong>Monto convertido:</strong> {fmtMonto(mvt.montoConvertido, "ars")}</li>
+            <li><strong>Monto convertido:</strong> {fmtMontoSigno(mvt.montoConvertido, "ars")}</li>
         {/if}
         {#if mvt.tercero != undefined}
             {#await getTercero(mvt.tercero)}

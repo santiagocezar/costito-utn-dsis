@@ -2,11 +2,12 @@
     import { RadioGroup } from "melt/builders";
 
     import { places } from "$lib/google-maps-init";
-    import { addMovimiento, addTercero, type Tercero } from "$lib/localDb";
+    import { addMovimiento, addTercero } from "$lib/localDb";
     import { onMount } from "svelte";
     import { cotizacionDolar } from "$lib";
     import { page } from "$app/state"    
     import { goto } from "$app/navigation"    
+    import type { Tercero } from "$lib/schema";
     
     let moneda: "usd" | "ars" = $state("ars")
     let monto = $state(0)
@@ -84,9 +85,12 @@
         const tercero = (selectedPlace && await addTercero($state.snapshot(selectedPlace))) ?? undefined
 
         await addMovimiento({
-            fecha: new Date(),
-            latitud: pos!.lat,
-            longitud: pos!.lng,
+            fecha: new Date().toISOString(),
+            fechaModificado: new Date().toISOString(),
+            ubicacion: {
+                lat: pos!.lat,
+                lng: pos!.lng,
+            },
             monto: monto * signo,
             moneda,
             montoConvertido: montoConvertido,
@@ -94,7 +98,6 @@
 
             etiquetas: [],
             presupuesto: parseInt(page.params.presupuesto),
-            indole: undefined,
             tercero: tercero,
         })
 
@@ -141,9 +144,12 @@
                                             : "bg-gray-200")
                                     ]}
                                     onclick={() => selectedPlace = {
+                                        fechaModificado: new Date().toISOString(),
                                         nombre: place.displayName ?? "Lugar sin nombre",
-                                        latitud: place.location?.lat?.() ?? posRef.lat,
-                                        longitud: place.location?.lng?.() ?? posRef.lng,
+                                        ubicacion: {
+                                            lat: place.location?.lat?.() ?? posRef.lat,
+                                            lng: place.location?.lng?.() ?? posRef.lng,
+                                        },
                                         mapsID: place.id
                                     }}
                                 >

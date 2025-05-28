@@ -1,129 +1,77 @@
 import Dexie, { type EntityTable } from "dexie"
-
-export interface Presupuesto {
-    id: number
-
-    nombre: string
-    montoActual: number
-    montoRenovacion: number
-    ultimaRenovacion: Date
-    periodoRenovacion: number
-}
-
-export interface Movimiento {
-    id: number
-
-    fecha: Date
-    latitud: number
-    longitud: number
-    monto: number
-    moneda: "usd" | "ars"
-    montoConvertido?: number
-    observacion: string
-
-    etiquetas: number[]
-    presupuesto: number
-    indole?: number
-    tercero?: number
-}
-
-export interface Etiqueta {
-    id: number
-
-    nombre: string
-    oculto: boolean
-}
-
-export interface Tercero {
-    id: number
-
-    nombre: string
-    latitud?: number
-    longitud?: number
-    mapsID?: string
-}
-
-export interface Indole {
-    id: number
-
-    nombre: string
-    icon: string
-}
+import { Etiqueta, Movimiento, Presupuesto, Tercero } from "./schema"
+import type { ZodObject } from "zod/v4"
+import { browser } from "$app/environment"
 
 export const db = new Dexie("Listas") as Dexie & {
     presupuestos: EntityTable<Presupuesto, "id">
     movimientos: EntityTable<Movimiento, "id">
     etiquetas: EntityTable<Etiqueta, "id">
     terceros: EntityTable<Tercero, "id">
-    indoles: EntityTable<Indole, "id">
 } 
 
-db.version(2).stores({
-    presupuestos: "++id,nombre,montoActual,montoRenovacion,ultimaRenovacion,periodoRenovacion",
-    movimientos: "++id,fecha,latitud,longitud,monto,moneda,montoConvertido,observacion,etiquetas,presupuesto,indole,tercero",
-    etiquetas: "++id,nombre,oculto",
-    terceros: "++id,nombre,latitud,longitud,mapsID",
-    indoles: "++id,nombre,icon",
+export function tableDef(schema: ZodObject) {
+    const cols = Object.keys(schema.shape).filter(v => v !== "id")
+    
+    return `++id,${cols.join(",")}`
+}
+
+db.version(4).stores({
+    presupuestos: tableDef(Presupuesto),
+    movimientos: tableDef(Movimiento),
+    etiquetas: tableDef(Etiqueta),
+    terceros: tableDef(Tercero),
 })
+// .upgrade((trans) => {
+//     return trans.table("presupuesto").toCollection().modify((p) => {
+//         p.inicioPeriodo = p.ultimaRenovacion
+//         delete p.ultimaRenovacion
+//         p.montoInicial = p.montoActual
+//         delete p.montoActual
+//     })
+// })
 
 export async function poblarDB() {
     const length = await db.presupuestos.count()
 
     if (length === 0) {
-        await db.presupuestos.add({
+        const presupuesto = await db.presupuestos.add({
             nombre: "Por defecto",
-            montoActual: 10000,
+            montoInicial: 10000,
             montoRenovacion: 10000,
             periodoRenovacion: 3600 * 24 * 30,
-            ultimaRenovacion: new Date()
+            inicioPeriodo: new Date().toISOString(),
+            fechaModificado: new Date().toISOString()
         })
+
+        const fechaModificado = new Date().toISOString()
+        const defaultEtiquetas = [
+            ["🍺", "bebida"],
+            ["🍕", "comida"],
+            ["😆", "ocio"],
+            ["🏠", "alquiler"],
+            ["🔒", "seguro"],
+            ["🏥", "salud"],
+        ]
+        await db.etiquetas.bulkAdd(defaultEtiquetas.map(([icon, nombre]) => (
+            { fechaModificado, icon, nombre, oculto: false, presupuesto }
+        )))
     }
+
 }
 
-export async function listPresupuestos() {
-    return await db.presupuestos.toArray()
-}
+export const listPresupuestos = ()            => db.presupuestos.toArray()
+export const getPresupuesto   = (id: number)  => db.presupuestos.get(id)
 
-export async function getPresupuesto(id: number) {
-    return await db.presupuestos.get(id)
-}
+export const listMovimientos = (presupuesto: number)                 => db.movimientos.where("presupuesto").equals(presupuesto).toArray()
+export const getMovimiento   = (id: number)                          => db.movimientos.get(id)
+export const addMovimiento   = (movimiento: Omit<Movimiento, "id">)  => db.movimientos.add(movimiento)
+export const putMovimiento   = (movimiento: Movimiento)              => db.movimientos.put(movimiento)
 
-export async function listMovimientos(presupuesto: number) {
-    return await db.movimientos.where("presupuesto").equals(presupuesto).toArray()
-}
+export const listEtiquetas = ()                                => db.etiquetas.toArray()
+export const getEtiqueta   = (id: number)                      => db.etiquetas.get(id)
+export const addEtiqueta   = (etiqueta: Omit<Etiqueta, "id">)  => db.etiquetas.add(etiqueta)
+export const putEtiqueta   = (etiqueta: Etiqueta)              => db.etiquetas.put(etiqueta)
 
-export async function getMovimiento(id: number) {
-    return await db.movimientos.get(id)
-}
-
-export async function addMovimiento(movimiento: Omit<Movimiento, "id">) {
-    return await db.movimientos.add(movimiento)
-}
-
-export async function putMovimiento(movimiento: Movimiento) {
-    return await db.movimientos.put(movimiento)
-}
-
-export async function listEtiquetas() {
-    return await db.etiquetas.toArray()
-}
-
-export async function getEtiqueta(id: number) {
-    return await db.etiquetas.get(id)
-}
-
-export async function addEtiqueta(etiqueta: Omit<Etiqueta, "id">) {
-    return await db.etiquetas.add(etiqueta)
-}
-
-export async function putEtiqueta(etiqueta: Etiqueta) {
-    return await db.etiquetas.put(etiqueta)
-}
-
-export async function getTercero(id: number) {
-    return await db.terceros.get(id)
-}
-
-export async function addTercero(tercero: Omit<Tercero, "id">) {
-    return await db.terceros.add(tercero)
-}
+export const getTercero = (id: number)                    => db.terceros.get(id)
+export const addTercero = (tercero: Omit<Tercero, "id">)  => db.terceros.add(tercero)

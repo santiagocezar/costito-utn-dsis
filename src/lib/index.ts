@@ -1,26 +1,26 @@
-import * as v from "valibot"
-import type { Movimiento } from "./localDb"
+import { z } from "zod/v4"
+import type { Movimiento } from "./schema"
 
 interface Cotizacion {
     compra: number
     venta: number
 }
 
-const CotizacionRaw = v.object({
-    compra: v.string(),
-    venta: v.string(),
+const CotizacionRaw = z.object({
+    compra: z.string(),
+    venta: z.string(),
 })
 
-const Cotizacion = v.object({
-    compra: v.number(),
-    venta: v.number(),
+const Cotizacion = z.object({
+    compra: z.number(),
+    venta: z.number(),
 })
 
 export async function cotizacionDolar(variante: "oficial" | "blue" = "oficial"): Promise<Cotizacion> {
     const res = await fetch(`https://mercados.ambito.com/dolar/${variante === "blue" ? "informal" : variante}/variacion`)
     const json = await res.json()
 
-    const raw = v.parse(CotizacionRaw, json)
+    const raw = z.parse(CotizacionRaw, json)
 
     const cotizacion: Cotizacion = {
         compra: parseFloat(raw.compra.replace(",", ".")),
@@ -48,12 +48,15 @@ export async function cotizacionDolarHistorca(fecha: Date, variante: "oficial"  
     const res = await fetch(`https://api.argentinadatos.com/v1/cotizaciones/dolares/${variante}/${yyyy}/${mm}/${dd}`)
     const json = await res.json()
 
-    return v.parse(Cotizacion, json)
+    return z.parse(Cotizacion, json)
 }
 
 export function fmtMonto(monto: number, moneda: Movimiento['moneda']) {
-    return (monto > 0 ? '+' : '') + monto.toLocaleString("es-AR", {
+    return monto.toLocaleString("es-AR", {
         style: "currency",
         currency: moneda === "ars" ? "ARS" : "USD",
     })
+}
+export function fmtMontoSigno(monto: number, moneda: Movimiento['moneda']) {
+    return (monto > 0 ? '+' : '') + fmtMonto(monto, moneda)
 }
