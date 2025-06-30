@@ -80,6 +80,13 @@
     </select>
 {/snippet}
 
+{#snippet navItem(to: string, icon: string, label: string)}
+    <a class="flex flex-col items-center justify-center" href="/{data.presupuesto!.id}/{to}">
+        <div class="{icon} text-3xl"></div>
+        <span class="text-xs">{label}</span>
+    </a>
+{/snippet}
+
 <div class="h-full grid grid-rows-[auto_1fr_auto]">
     {#if page.route.id !== "/[presupuesto]/movimientos"}
         <header class="flex items-center h-16 bg-pink-600 text-white px-3 py-1">
@@ -104,29 +111,8 @@
         {/if}
         {@render children()}
     </div>
-    <nav class="mt-a sticky pos-bottom-0 h-24 w-full p-4 grid grid-cols-3 bg-white shadow-2xl">
-        <a href="/{data.presupuesto!.id}/movimientos">Movimientos</a>
-        <a href="/{data.presupuesto!.id}/etiquetas">Etiquetas</a>
+    <nav class="mt-a sticky pos-bottom-0 h-20 w-full p-4 grid grid-cols-2 bg-white shadow-2xl">
+        {@render navItem("movimientos", "i-hugeicons-arrow-data-transfer-diagonal", "Movimientos")}
+        {@render navItem("etiquetas",   "i-hugeicons-tag-01",                       "Etiquetas")}
     </nav>
 </div>
-
-<style>
-    .header-wrapper {
-        --full-height: calc(var(--spacing) * 60);
-        --collapsed-height: calc(var(--spacing) * 16);
-        height: var(--full-height);
-        padding: calc(var(--spacing) * 2);
-        display: flex;
-        flex-shrink: 0;
-        /* position: sticky; */
-        /* top: calc(var(--collapsed-height) - var(--full-height)); */
-        transition: height .2s ease, padding .2s ease;
-    }
-
-    .header-wrapper[data-collapsed="true"] {
-        position: sticky;
-        top: 0;
-        height: var(--collapsed-height);
-        padding: 0;
-    }
-</style>
