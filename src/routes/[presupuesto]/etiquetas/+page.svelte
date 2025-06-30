@@ -3,17 +3,22 @@
     import { addEtiqueta, listEtiquetas, putEtiqueta } from "$lib/localDb";
     import { liveQuery } from "dexie";
     import { Picker } from 'emoji-picker-element';
+    import { Popover } from "bits-ui";
+    import EtiquetaChip from "$lib/components/EtiquetaChip.svelte";
 
-    const etiquetas = liveQuery(() => listEtiquetas())
+    const { data } = $props()
+
+    const etiquetas = liveQuery(() => listEtiquetas(data.presupuesto!.id))
 
     let icon = $state("🔷")
-    let nombre = $state("generales")
+    let nombre = $state("")
 
     function emoji(node: Picker) {
         node.addEventListener("emoji-click", (ev) => icon = ev.detail.unicode!)
     }
 
     function onSubmit(ev: SubmitEvent) {
+        ev.preventDefault()
         if (!(ev.target instanceof HTMLFormElement)) {
             return
         }
@@ -37,22 +42,33 @@
             })
         }
 
-        ev.preventDefault()
         nombre = ""
     }
 </script>
 
-<ul>
-    {#each ($etiquetas ?? []) as etq (etq.id)}
-        {#if !etq.oculto}
-            <li>{etq.icon} {etq.nombre} <button onclick={() => putEtiqueta({...etq, oculto: true})}>Borrar</button></li>
-        {/if}
-    {/each}
-    <form onsubmit={onSubmit}>
-        <input class="w-12" value={icon} type="text" disabled>
-        <input bind:value={nombre} type="text" name="nombre" required>
-        <br>
-        <emoji-picker {@attach emoji}></emoji-picker>
-        <button>Agregar</button>
+<div class="p-2">
+    <div class="flex flex-col gap-2">
+        {#each ($etiquetas ?? []) as etq (etq.id)}
+            {#if !etq.oculto}
+                <EtiquetaChip etiqueta={etq} onDelete={() => putEtiqueta({...etq, oculto: true})} />
+                <!-- <li>{etq.icon} {etq.nombre} <button onclick={}>Borrar</button></li> -->
+            {/if}
+        {/each}
+    </div>
+    <form class="mt-4 flex w-full gap-2" onsubmit={onSubmit}>
+        <Popover.Root>
+            <Popover.Trigger class="b-px b-gray rounded-lg text-2xl px-4 py-2">{icon}</Popover.Trigger>
+            <Popover.Portal>
+                <Popover.Content class="p-2">
+                    <emoji-picker {@attach emoji}></emoji-picker>
+                </Popover.Content>
+            </Popover.Portal>
+
+        </Popover.Root>
+        <input bind:value={nombre} class="b-px b-gray rounded-lg text-2xl px-4 py-2 min-w-0" type="text" name="nombre" required>
+        
+        <button aria-label="add" class="shrink-0 aspect-square grid w-12 bg-blue-600 text-white place-content-center center p-2 text-xl rounded-lg">
+            <div class="i-hugeicons-add-01"></div>
+        </button>
     </form>
-</ul>
+</div>

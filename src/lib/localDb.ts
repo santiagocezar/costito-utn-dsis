@@ -68,7 +68,7 @@ export const getMovimiento   = (id: number)                          => db.movim
 export const addMovimiento   = (movimiento: Omit<Movimiento, "id">)  => db.movimientos.add(movimiento)
 export const putMovimiento   = (movimiento: Movimiento)              => db.movimientos.put(movimiento)
 
-export const listEtiquetas = ()                                => db.etiquetas.toArray()
+export const listEtiquetas = (presupuesto: number)             => db.etiquetas.where("presupuesto").equals(presupuesto).toArray()
 export const getEtiqueta   = (id: number)                      => db.etiquetas.get(id)
 export const addEtiqueta   = (etiqueta: Omit<Etiqueta, "id">)  => db.etiquetas.add(etiqueta)
 export const putEtiqueta   = (etiqueta: Etiqueta)              => db.etiquetas.put(etiqueta)

@@ -57,6 +57,7 @@ export function fmtMonto(monto: number, moneda: Movimiento['moneda']) {
         currency: moneda === "ars" ? "ARS" : "USD",
     })
 }
+
 export function fmtMontoSigno(monto: number, moneda: Movimiento['moneda']) {
     return (monto > 0 ? '+' : '') + fmtMonto(monto, moneda)
 }

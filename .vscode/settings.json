@@ -1,0 +1,5 @@
+{
+    "yaml.schemas": {
+        "openapi:v3_1_unknown": "file:///var/home/santi/Cositas/costito/apiworking.yml"
+    }
+}

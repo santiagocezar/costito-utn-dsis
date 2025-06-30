@@ -8,7 +8,12 @@
     import { page } from "$app/state"    
     import { goto } from "$app/navigation"    
     import type { Tercero } from "$lib/schema";
+    import type { PageProps } from "./$types";
+    import EtiquetaChip from "$lib/components/EtiquetaChip.svelte";
+    import { SvelteSet } from "svelte/reactivity";
     
+    const { data }: PageProps = $props()
+
     let moneda: "usd" | "ars" = $state("ars")
     let monto = $state(0)
     let signo = $state(-1)
@@ -18,10 +23,27 @@
     let searchPlaces: boolean = $state(false)
     let selectedPlace: Omit<Tercero, "id"> | null = $state(null)
 
+    const selectedTags = new SvelteSet<number>()
+
+    const theSelected = $derived(
+        data.etiquetas.filter((etq) => !etq.oculto && selectedTags.has(etq.id))
+    )
+
+    const theUnselected = $derived(
+        data.etiquetas.filter((etq) => !etq.oculto && !selectedTags.has(etq.id))
+    )
+
+    function selectTag(id: number) {
+        selectedTags.add(id)
+    }
+    function deselectTag(id: number) {
+        selectedTags.delete(id)
+    }
+    
     const group = new RadioGroup({
-        value: "Egreso",
+        value: "Gasto",
         orientation: "horizontal",
-        onValueChange: (value) => signo = value === "Egreso" ? -1 : 1
+        onValueChange: (value) => signo = value === "Gasto" ? -1 : 1
     });
 
     onMount(async () => {
@@ -96,7 +118,7 @@
             montoConvertido: montoConvertido,
             observacion: "",
 
-            etiquetas: [],
+            etiquetas: [...selectedTags],
             presupuesto: parseInt(page.params.presupuesto),
             tercero: tercero,
         })
@@ -116,16 +138,16 @@
         <input bind:value={monto} class="w-0 grow text-2xl bg-transparent p-2 border-0 border-b-2 ring-0" type="number" name="monto">
     </div>
     <div class="grid grid-cols-2 p-1 rounded-xl bg-gray-200" {...group.root}>
-        {#each ["Egreso", "Ingreso"] as metodo}
+        {#each ["Gasto", "Ingreso"] as metodo}
             {@const item = group.getItem(metodo)}
             <div class={["p-2 grid place-content-center !outline-none ring-blue-600 focus:ring-1 rounded-xl", { "bg-white": item.checked}]} {...item.attrs}>
                 {metodo}
             </div>
         {/each}
     </div>
-    {#if pos !== null}
-        {@const posRef = pos}
-        <div class="grow max-h-full flex flex-col overflow-auto">
+    <div class="grow max-h-full flex flex-col overflow-auto">
+        {#if pos !== null}
+            {@const posRef = pos}
             {#if searchPlaces}
                 {#await buscarLugares(posRef)}
                     <p class="text-xl/10 text-center">
@@ -164,9 +186,21 @@
             {:else}
                 <button class="bg-gray-200 w-full p-2 rounded-xl" type="button" onclick={() => searchPlaces = true}>Buscar lugares cerca</button>
             {/if}
-        </div>
+        {/if}
+    </div>
+
+    <div class="flex overflow-auto gap-2">
+        {#each theSelected as etq (etq.id)}
+            <EtiquetaChip etiqueta={etq} onClick={deselectTag} onDelete={deselectTag} selected={true} />
+        {/each}
+        {#each theUnselected as etq (etq.id)}
+            <EtiquetaChip etiqueta={etq} onClick={selectTag} />
+        {/each}
+    </div>
+    
+    {#if pos !== null}
         <button class="bg-blue-600 text-white p-2 text-xl rounded-xl" type="submit">Cargar</button>
     {:else}
-        <p>Active la ubicación</p>
+        <button class="bg-gray-200 text-black p-2 text-xl rounded-xl" disabled type="submit">Active la ubicación</button>
     {/if}
 </form>

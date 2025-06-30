@@ -6,50 +6,52 @@
     // import { getMovimientos, getPresupuestos } from "$lib/localDb";
     // import { liveQuery } from "dexie";
     import type { PageProps } from "./$types";
+    import EtiquetaChip from "$lib/components/EtiquetaChip.svelte";
+    import { SvelteSet } from "svelte/reactivity";
+    import MovimientoItem from "$lib/components/MovimientoItem.svelte";
 
     const { data }: PageProps = $props()
 
-    async function calcularConversion(mvtViejo: Movimiento) {
-        const mvt = { ...mvtViejo }
-        const conversion = await cotizacionDolarHistorca(new Date(mvt.fecha), "oficial")
+    const etiquetas = new Map(data.etiquetas.map((etq) => [etq.id, etq]))
 
-        if (mvt.monto < 0) {
-            // Si el usuario gasta dolares, se estima que va a comprar más dolares
-            // para reponer el gasto, por lo que se usa el valor de Venta. 
-            mvt.montoConvertido = mvt.monto * conversion.venta
-        } else {
-            // Si el usuario recibe dolares, se estima que va a querer venderlos
-            // a cambio de pesos, por lo que se usa el valor de Compra. 
-            mvt.montoConvertido = mvt.monto * conversion.compra
-        }
-        
-        await putMovimiento(mvt)
+    const selectedTags = new SvelteSet<number>()
 
-        return mvt.montoConvertido
+    const theSelected = $derived(
+        data.etiquetas.filter((etq) => !etq.oculto && selectedTags.has(etq.id))
+    )
+
+    const theUnselected = $derived(
+        data.etiquetas.filter((etq) => !etq.oculto && !selectedTags.has(etq.id))
+    )
+
+    function selectTag(id: number) {
+        selectedTags.add(id)
     }
+    function deselectTag(id: number) {
+        selectedTags.delete(id)
+    }
+
+    const filtered = $derived(
+        selectedTags.size === 0 ? data.movimientos : data.movimientos.filter((mvt) => {
+            return mvt.etiquetas.some(id => selectedTags.has(id))
+        })
+    )
 </script>
 
-<div class="flex flex-col p-4 gap-2">
-    <a class="bg-blue-600 text-white text-center p-2 text-xl rounded-xl" href="nuevo">Cargar</a>
-    {#each data.movimientos as mvt}
-        <a href={mvt.id.toString()} class="flex justify-between p-2 rounded-xl bg-gray-100">
-            <div class="grow">
-                {fmtMontoSigno(mvt.monto, mvt.moneda)}
-                {#if mvt.montoConvertido != undefined}
-                    ({fmtMontoSigno(mvt.montoConvertido, "ars")})
-                {:else if mvt.moneda !== "ars"}
-                    {#await calcularConversion(mvt)}
-                        (...)
-                    {:then monto} 
-                        ({fmtMontoSigno(monto, "ars")})
-                    {/await}
-                {/if}
-            </div>
-            {new Date(mvt.fecha).toLocaleDateString("es-AR", {
-                year: "numeric",
-                month: "2-digit",
-                day: "2-digit",
-            })}
-        </a>
-    {/each}
+<div class="flex flex-col p-4 gap-2 pos-relative">
+    <div class="flex overflow-auto gap-2">
+        {#each theSelected as etq (etq.id)}
+            <EtiquetaChip etiqueta={etq} onClick={deselectTag} onDelete={deselectTag} selected={true} />
+        {/each}
+        {#each theUnselected as etq (etq.id)}
+            <EtiquetaChip etiqueta={etq} onClick={selectTag} />
+        {/each}
+    </div>
+    
+    {#each filtered as mvt}
+        <MovimientoItem movimiento={mvt} etiquetas={etiquetas} />
+    {/each}   
 </div>
+<a aria-label="add" class="self-end mr-4 mt-a aspect-square grid pos-sticky bottom-4 w-12 bg-blue-600 text-white place-content-center center p-2 text-xl rounded-4xl" href="nuevo">
+    <div class="i-hugeicons-add-01"></div>
+</a>
