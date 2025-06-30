@@ -61,19 +61,21 @@
     {/if}
     <div class="flex flex-wrap gap-2">
         {#each mvt.etiquetas as etq}
-            <EtiquetaChip etiqueta={etiquetas.get(etq)} />
+            <EtiquetaChip etiqueta={etiquetas.get(etq)!} />
         {/each}
     </div>
     {#if mvt.tercero != undefined}
-        {#await getTercero(mvt.tercero)}
-            Cargando datos del tercero...
-        {:then tercero} 
-            <li><strong>Tercero:</strong> {tercero!.nombre}</li>
-        {/await}
+        <div class="flex items-center my-2">
+            <div class="i-hugeicons-pin-location-02 text-3xl"></div>
+            {#await getTercero(mvt.tercero)}
+                ...
+            {:then tercero} 
+                {tercero!.nombre}
+            {/await}
+        </div>
     {/if}
-    <div use:asMap class="w-full h-72"></div>
+    <div use:asMap class="w-full h-72 b-px b-gray rounded-lg"></div>
     <ul>
         <li><strong>ID:</strong> {mvt.id}</li>
-        <li><strong>Fecha:</strong> {new Date(mvt.fecha).toLocaleDateString()}</li>
     </ul>
 </main>
