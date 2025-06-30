@@ -189,6 +189,7 @@
         {/if}
     </div>
 
+    <div class="flex items-center gap-2"><i class="inline-block i-hugeicons-tag-01"></i><span class="text-sm">Etiquetar</span></div>
     <div class="flex overflow-auto gap-2">
         {#each theSelected as etq (etq.id)}
             <EtiquetaChip etiqueta={etq} onClick={deselectTag} onDelete={deselectTag} selected={true} />
